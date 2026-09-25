@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import os
 import re
 from pathlib import Path
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, Response
 
 from .adapter import AdapterError, request_assistant
 from .configuration import load_config, render_placeholders
@@ -65,8 +66,70 @@ def _is_out_of_band_command(command: str) -> bool:
     return str(command or "").startswith(("gift_item ", "revoke_item "))
 
 
+# ==== Basic Auth ====
+
+def _load_htpasswd_users(path: str) -> dict:
+    """读取htpasswd文件，返回 {username: hash} 字典。"""
+    users = {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or ":" not in line:
+                    continue
+                username, pwhash = line.split(":", 1)
+                users[username] = pwhash
+    except FileNotFoundError:
+        return {}
+    return users
+
+
+def _verify_htpasswd(users: dict, username: str, password: str) -> bool:
+    """用passlib校验htpasswd hash。支持bcrypt/apr1/sha/crypt/plaintext。"""
+    pwhash = users.get(username)
+    if not pwhash:
+        return False
+    try:
+        from passlib.context import CryptContext
+        ctx = CryptContext(schemes=["bcrypt", "apr_md5_crypt", "des_crypt", "sha256_crypt", "sha512_crypt", "plaintext"])
+        return ctx.verify(password, pwhash)
+    except Exception:
+        return False
+
+
+def _require_basic_auth(app: Flask) -> None:
+    """如果配了CAPTIVITY_BASIC_AUTH_FILE环境变量，全局启用Basic Auth。"""
+    auth_file = os.environ.get("CAPTIVITY_BASIC_AUTH_FILE", "").strip()
+    if not auth_file or not os.path.isfile(auth_file):
+        app.logger.warning("[auth] Basic Auth disabled (no htpasswd file)")
+        return
+
+    users = _load_htpasswd_users(auth_file)
+    if not users:
+        app.logger.warning("[auth] htpasswd file is empty, auth disabled")
+        return
+
+    app.logger.info("[auth] Basic Auth enabled with %d user(s)", len(users))
+
+    @app.before_request
+    def _check_auth():
+        # 允许健康检查匿名访问（Zeabur自动探活用）
+        if request.path == "/api/health":
+            return None
+        auth = request.authorization
+        if auth and _verify_htpasswd(users, auth.username or "", auth.password or ""):
+            return None
+        return Response(
+            "Authentication required",
+            401,
+            {"WWW-Authenticate": 'Basic realm="captivity-simulator"'},
+        )
+
+
 def create_app() -> Flask:
     app = Flask(__name__, static_folder=None)
+
+    _require_basic_auth(app)
 
     @app.get("/api/health")
     def health():
@@ -140,9 +203,12 @@ def create_app() -> Flask:
 def main() -> None:
     config = load_config()
     server = config.get("server") if isinstance(config.get("server"), dict) else {}
+    # Docker/Zeabur环境优先监听0.0.0.0；环境变量CAPTIVITY_HOST/PORT可覆盖
+    default_host = os.environ.get("CAPTIVITY_HOST") or str(server.get("host") or "127.0.0.1")
+    default_port = int(os.environ.get("CAPTIVITY_PORT") or server.get("port") or 5058)
     create_app().run(
-        host=str(server.get("host") or "127.0.0.1"),
-        port=int(server.get("port") or 5058),
+        host=default_host,
+        port=default_port,
         debug=False,
     )
 
