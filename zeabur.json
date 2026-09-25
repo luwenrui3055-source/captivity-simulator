@@ -1,0 +1,21 @@
+{
+  "$schema": "https://schema.zeabur.app/template.json",
+  "name": "captivity-simulator",
+  "type": "docker",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "ports": [
+    {
+      "id": "web",
+      "port": 5058,
+      "type": "HTTP"
+    }
+  ],
+  "volumes": [
+    {
+      "id": "data",
+      "path": "/app/data"
+    }
+  ]
+}
