@@ -57,7 +57,8 @@ def _tool_definition() -> dict[str, Any]:
         "name": TOOL_NAME,
         "description": (
             "读取或推进本地囚禁模拟器存档。先查询状态，再提交当前待处理事件允许的一条命令。"
-            "状态变化由规则引擎负责，并分别返回囚禁方与被囚禁方视图。"
+            "查询状态请使用 status；开始新游戏请使用 new_game route=captured_by_assistant 或 "
+            "new_game route=capture_assistant。状态变化由规则引擎负责，并分别返回囚禁方与被囚禁方视图。"
         ),
         "inputSchema": {
             "type": "object",
@@ -65,8 +66,9 @@ def _tool_definition() -> dict[str, Any]:
                 "command": {
                     "type": "string",
                     "description": (
-                        "查询状态、开始新游戏，或直接提交当前中文方括号指令。"
-                        "为兼容自行接入的后端，也继续接受原始规则引擎命令。"
+                        "查询状态时传 status；开始新游戏时传 new_game route=captured_by_assistant "
+                        "或 new_game route=capture_assistant。也可提交当前步骤要求的中文方括号指令。"
+                        "引擎接受原始规则命令，但请勿只传未带指令格式的自然语言描述。"
                     ),
                 },
                 "save_id": {
