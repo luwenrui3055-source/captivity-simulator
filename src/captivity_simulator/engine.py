@@ -2025,7 +2025,7 @@ def _respond_action(state: dict[str, Any], args: dict[str, Any]) -> tuple[bool, 
 
     if bool(event.get("requires_process")):
         state["pending_event"] = _new_pending(state, "process_write", event, actor="assistant")
-        return True, [f"行动反应已记录：{ACTION_RESPONSE_LABELS.get(response, response)}。等待{assistant}填写过程。"]
+        return True, [f"行动反应已记录：{ACTION_RESPONSE_LABELS.get(response, response)}。等待{{assistant}}填写过程。"]
 
     _resolve_event(state, event)
     special = _after_special_event_resolved(state, event)
