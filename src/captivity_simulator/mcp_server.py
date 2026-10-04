@@ -68,6 +68,7 @@ def _tool_definition() -> dict[str, Any]:
                     "description": (
                         "查询状态时传 status；开始新游戏时传 new_game route=captured_by_assistant "
                         "或 new_game route=capture_assistant。也可提交当前步骤要求的中文方括号指令。"
+                        "需要回应时，先把玩家自然语言映射到当前提示列出的固定回应与心情选项，不要自造枚举值；原话放入台词字段，含空格时用引号。"
                         "引擎接受原始规则命令，但请勿只传未带指令格式的自然语言描述。"
                     ),
                 },
