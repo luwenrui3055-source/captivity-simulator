@@ -13,7 +13,7 @@ echo "starting flask"
 captivity-simulator &
 echo "starting supergateway"
 if [ -n "$MCP_TOKEN" ]; then
-    exec supergateway --stdio "python -u -m captivity_simulator.mcp_server" --port 8765 --ssePath /sse --messagePath /message --header "X-MCP-Token: $MCP_TOKEN" --cors
+    exec supergateway --stdio "python -u -m captivity_simulator.mcp_server" --outputTransport streamableHttp --port 8765 --streamableHttpPath /mcp --apiKey "$MCP_TOKEN"
 else
-    exec supergateway --stdio "python -u -m captivity_simulator.mcp_server" --port 8765 --ssePath /sse --messagePath /message --cors
+    exec supergateway --stdio "python -u -m captivity_simulator.mcp_server" --outputTransport streamableHttp --port 8765 --streamableHttpPath /mcp
 fi
