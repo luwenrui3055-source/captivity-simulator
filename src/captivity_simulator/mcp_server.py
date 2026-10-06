@@ -59,6 +59,7 @@ def _tool_definition() -> dict[str, Any]:
             "读取或推进本地囚禁模拟器存档。先查询状态，再提交当前待处理事件允许的一条命令。"
             "查询状态请使用 status；开始新游戏请使用 new_game route=captured_by_assistant 或 "
             "new_game route=capture_assistant。状态变化由规则引擎负责，并分别返回囚禁方与被囚禁方视图。"
+            "在 captured_by_assistant 路线中，夜间自主行动属于被囚禁的用户，应由用户在网页端选择；AI 不得代替用户调用 night_action。"
         ),
         "inputSchema": {
             "type": "object",
@@ -124,11 +125,23 @@ def _call_tool(params: Any) -> dict[str, Any]:
     save_path = _save_path(save_id)
     current = run_command("status", save_path=save_path)
     command = directive_to_command(raw_command, current) or raw_command
-    payload = run_command(command, save_path=save_path)
     config = load_config()
+    actor_view = current.get("captor_view") if isinstance(current.get("captor_view"), dict) else {}
+    if command.split(maxsplit=1)[0] == "night_action" and str(actor_view.get("captive") or "") != "assistant":
+        message = (
+            "当前夜间行动回合属于被囚禁的用户，请由用户在 5058 网页端选择；"
+            "AI 是囚禁方，不能代替用户提交 night_action。"
+        )
+        return {
+            "content": [{"type": "text", "text": message}],
+            "structuredContent": {"ok": False, "text": message},
+            "isError": True,
+        }
+    payload = run_command(command, save_path=save_path)
     projected = project_payload(payload, "assistant")
     configured = render_placeholders(projected, config)
-    prompt = build_assistant_prompt(payload, config) if configured.get("ok") else str(configured.get("text") or "")
+    engine_text = render_placeholders(str(payload.get("text") or ""), config).strip()
+    prompt = build_assistant_prompt(payload, config) if configured.get("ok") else (engine_text or str(configured.get("text") or ""))
     visible_text = str(prompt or configured.get("text") or "").strip()
     result: dict[str, Any] = {
         "content": [{"type": "text", "text": visible_text}],
