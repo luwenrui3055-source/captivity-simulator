@@ -168,6 +168,12 @@ AI 未配置时接口返回 `409`，不会访问任何网络模型。HTTP 响应
 
 同步接口只会在当前 pending 确实属于 AI 时解析推进指令；当前轮到玩家操作时，AI 回复不能代替玩家点击或推进状态。赠送与收回物品属于行动外行为，可以在任意时段执行，也不会因为送礼单独触发同步。所有礼物先进入待发放队列，入夜后统一告知接收方；附言随礼物一起出现，可交互物品会在同一晚加入夜间行动选项。
 
+## 远程 MCP（Streamable HTTP）
+
+Docker 与 Zeabur 部署会在端口 `8765` 提供 MCP Streamable HTTP 服务，客户端连接地址为 `https://<你的MCP域名>/mcp`。`5058` 端口仍是游戏网页/API 服务，两者使用同一套存档。
+
+MCP 客户端应选择 **Streamable HTTP** transport，并填写完整的 `/mcp` 地址。旧 SSE 配置 `/sse` 与 `/message` 在该部署模式下不再提供。如果设置了 `MCP_TOKEN`，客户端需使用其 Bearer/API key 认证；未设置时 MCP 端点不要求 key。`BASIC_AUTH_USER` 与 `BASIC_AUTH_PASS` 仅保护网页服务，不保护 MCP 端点。
+
 ## MCP stdio 连接
 
 MCP 和 Web UI 共用同一套规则引擎与 `data/saves/` 本地存档，不会生成第二份游戏状态，也不需要安装额外的 MCP Python 包。
