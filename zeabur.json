@@ -14,32 +14,23 @@ fi
 export CAPTIVITY_HOST=0.0.0.0
 export CAPTIVITY_PORT=5058
 
-# ==== MCP Token（SSE URL鉴权） ====
-if [ -z "$MCP_TOKEN" ]; then
-    echo "[entrypoint] WARNING: MCP_TOKEN not set, SSE endpoint has NO auth!"
-fi
-
 # ==== 后台启动Flask网页服务 ====
 echo "[entrypoint] Starting Flask web server on 0.0.0.0:5058 ..."
 captivity-simulator &
-FLASK_PID=$!
 
-# ==== 前台启动supergateway包装MCP stdio → SSE ====
-# 通过 URL 参数鉴权：客户端连接时必须带 ?token=<MCP_TOKEN>
-echo "[entrypoint] Starting supergateway MCP SSE on 0.0.0.0:8765 ..."
+# ==== 前台启动supergateway包装MCP stdio → Streamable HTTP ====
+echo "[entrypoint] Starting supergateway MCP Streamable HTTP on 0.0.0.0:8765/mcp ..."
 if [ -n "$MCP_TOKEN" ]; then
     exec npx -y supergateway \
-        --stdio "python -m captivity_simulator.mcp_server" \
+        --stdio "python -u -m captivity_simulator.mcp_server" \
+        --outputTransport streamableHttp \
         --port 8765 \
-        --ssePath "/sse" \
-        --messagePath "/message" \
-        --header "X-MCP-Token: $MCP_TOKEN" \
-        --cors
+        --streamableHttpPath "/mcp" \
+        --apiKey "$MCP_TOKEN"
 else
     exec npx -y supergateway \
-        --stdio "python -m captivity_simulator.mcp_server" \
+        --stdio "python -u -m captivity_simulator.mcp_server" \
+        --outputTransport streamableHttp \
         --port 8765 \
-        --ssePath "/sse" \
-        --messagePath "/message" \
-        --cors
+        --streamableHttpPath "/mcp"
 fi
