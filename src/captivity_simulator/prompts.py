@@ -93,6 +93,14 @@ def _stats_text(view: dict[str, Any]) -> str:
         "mood": "心情",
     }
     bits = [f"{label} {stats[key]}" for key, label in labels.items() if key in stats]
+    if str(view.get("route") or "") == "captured_by_assistant":
+        bladder = view.get("bladder") if isinstance(view.get("bladder"), dict) else {}
+        try:
+            pressure = max(0, min(3, int(bladder.get("pressure") or 0)))
+        except Exception:
+            pressure = 0
+        bladder_label = str(bladder.get("label") or "").strip()
+        bits.append(f"尿意压力 {pressure}/3" + (f"（{bladder_label}）" if bladder_label else ""))
     return "状态：" + " / ".join(bits) if bits else ""
 
 
@@ -246,6 +254,11 @@ def build_assistant_prompt(payload: dict[str, Any], config: dict[str, Any], mess
         parts.append(stats_text)
     if BODY_STATE_DISCLAIMER not in opening:
         parts.append(BODY_STATE_DISCLAIMER)
+    if route == "captured_by_assistant" and isinstance(view.get("bladder"), dict):
+        parts.append(
+            "尿意压力由规则引擎维护，范围为 0–3；只有引擎返回值为 0 时才表示已清零。"
+            "辅助排尿会将其清零，单独的如厕控制不会清零。请依据当前状态与后续工具结果，不要自行推算或宣称数值已变化。"
+        )
     event_lines = _day_batch_event_lines(pending) if pending_type == "day_batch_response" else _current_event_lines(pending)
     if message.strip():
         message_excerpt = message.strip()[:220]
