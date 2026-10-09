@@ -206,6 +206,7 @@ MCP server 暴露：
 - 工具 `captivity_simulator`：参数为 `command` 和可选 `save_id`。
 - 只读工具 `captivity_simulator_reference`：参数为中文 `分类`，查询通用选项，不推进存档。
 - 资源 `captivity-simulator://save/default`：读取默认存档当前状态。
+- “被 `{assistant}` 囚禁”路线的状态资源与 AI 状态提示包含 `bladder.pressure`（0–3）和文字等级；辅助排尿内容会将该值清零，单独的如厕控制不会。
 - 工具结果的 `content` 是当前步骤的纯中文游戏提示；`structuredContent` 只重复 `ok` 与这段文本，不把后端 pending、内部 ID 或另一侧私有视图交给模型。
 - `command` 可以直接提交提示中给出的中文方括号指令；原始规则引擎命令只作为自行接入后端时的兼容入口保留。
 
